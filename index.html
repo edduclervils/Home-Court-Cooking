@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Home Court Cooking</title>
+</head>
+<body>
+    <h1>Home Court Cooking</h1>
+    <p>This weekend, there was a little 'dust-up' in the online NBA world. Some rando on Reddit discovered that one player (Jaren Jackson Jr.) had <em>grossly</em> inflated blocks and steals when playing at home. Now, it's not uncommon for players to perform better during home games, but the size of the difference was quite noticeable. And given that sports betting has become a thing as of recently and coupled with that fact that JJJ is a front-runner for Defensive Player of the Year, people memed this endlessly for like 12-16 hours. And if you're familiar with the attention span of the internet, you know that's like the equivalent of a decade in real-world time.</p>
+
+    <p>So, in honor of the Memphis Grizzlies, let's see how deep this rabbit hole goes. We're going to use 
+    this API to pull stats and see how all the Grizzlies' players fair in home games vs. away games.
+    Seriously, though. Thank you to the random stranger who made this a thing. I was really struggling to decide
+    what I was gonna build this site about, then this story just fell in my lap.</p>
+    
+
+    <p>Now, If I was better at coding, this would be available for all teams and players. But I'm not. At least not yet. So we're just gonna do the Grizzlies players.</p>
+    
+
+    <p>Honestly, the API thing is a bit trickier than I initially expected. Like the whole "calling" part
+    is simple enough and if you're dealing with small amounts of data, it's pretty straightforward.
+    But it's when you're dealing with massive amounts of data that things become a bit more complicated &
+    I have a couple questions that I struggled to find answers to online.</p>
+
+    <p>For example, can you create your own parameters for someone's API? The API that I'm using has some given query parameters, which is helpful, but to do something that should be simple,
+        i.e. Find all the players on the Memphis grizzlies' roster for the 2022 season, I have to do some judo flips. If I could create my own query parameters based on data I know is in the API,
+        then all of this would be much more intuitive. 
+    </p>
+
+    <p>On top of that, how are you supposed to traverse all of these pages? There's no work-around for this one, so I'll figure it out eventually. Plus I'm pretty sure it's obvious and 
+        I'm simply missing something, but for the time being, it's a question. I'm just gonna use this time to complain about my previous question because as time has gone on, I realize that 
+        by "judo flips," what I meant was "hard-code." Hard-coding is always a personal failure, but the alternative would be to make 250+ calls to the API, which is going to result in some
+        issues given this API has a rate limit of 60 requests per minute. 
+    </p>
+
+    <p>Also, I understand that to the onlooker, me sitting here talking to myself is absolutely psychotic, but I do it to help me think. For example, I was just talking about making 252 API 
+        requests and how terrible that would be, but in the midst of doing that, I also realized that I can do something to limit it to 6 pages with reasonable accuracy. Most of the time, I would 
+        reread it, mark down important notes, and just delete it all. But I'm tired, so it's staying. I even added the 'p' element to convince myself that I'm actually doing work and not just 
+        wasting time, so this worked out perfectly. 
+    </p>
+
+    <p>Anyways. You don't want to hear me ramble. Select a Team to get started.</p>
+    <label for="Team-Names">Select a Team:</label>
+    <select name="Team-Names" id="Team-Names" onchange="pickteam(event)">
+        <option value="1">Atlanta Hawks</option>
+        <option value="2">Boston Celtics</option>
+        <option value="3">Brooklyn Nets</option>
+        <option value="4">Charlotte Hornets</option>
+        <option value="5">Chicago Bulls</option>
+        <option value="6">Cleveland Cavaliers</option>
+        <option value="7">Dallas Mavericks</option>
+        <option value="8">Denver Nuggets</option>
+        <option value="9">Detroit Pistons</option>
+        <option value="10">Golden State Warriors</option>
+        <option value="11">Houston Rockets</option>
+        <option value="12">Indiana Pacers</option>
+        <option value="13">LA Clippers</option>
+        <option value="14">Los Angeles Lakers</option>
+        <option value="15">Memphis Grizzlies</option>
+        <option value="16">Miami Heat</option>
+        <option value="17">Milwaukee Bucks</option>
+        <option value="18">Minnesota Timberwolves</option>
+        <option value="19">New Orleans Pelicans</option>
+        <option value="20">New York Knicks</option>
+        <option value="21">Oklahoma City Thunder</option>
+        <option value="22">Orlando Magic</option>
+        <option value="23">Philadelphia 76ers</option>
+        <option value="24">Phoenix Suns</option>
+        <option value="25">Portland Trail Blazers</option>
+        <option value="26">Sacramento Kings</option>
+        <option value="27">San Antonio Spurs</option>
+        <option value="28">Toronto Raptors</option>
+        <option value="29">Utah Jazz</option>
+        <option value="30">Washington Wizards</option>
+    </select>
+    <button onclick="resetToFind()">List Players</button>
+
+    <h3>Players</h3>
+    <ul id="PlayerList">
+    </ul>
+
+    <p>Now, once you've accomplished that, we can sort stats. Good news and Bad News. The good news is (as you can probably tell) this program works for all teams.
+        The bad news is with the way this is coded, it's not gonna work unless you do step 1 first. I'll see if I can fix that, tomorrow. If not, you're gonna have to deal with it.
+    </p>
+
+    <p>So, Just type the name you want in the textbox, and we'll handle the rest.</p>
+
+    <p>Points/Rebounds/Assists/Blocks/Steals</p>
+
+    <input type="text" placeholder="name" oninput="setPlayerName(event)"> <button onclick="getStats(event)">Get Split Stats</button>
+
+    <h4>Home Stats</h4>
+    <div class="Home" id="Home"></div> 
+    <h4>Away Stats</h4>
+    <div class="Away" id="Away"></div>
+
+
+</body>
+<script>
+    let playernames = [];
+    let pageNumber = 1;
+    let numOfPlayers = 0;
+    let team = document.getElementById("Team-Names");
+    let fullGamesPlayed = 0;
+    let homeGamesPlayed = 0;
+    let fullpts = 0;
+    let fullrbd = 0;
+    let fullast = 0;
+    let fullblk = 0;
+    let fullstl = 0;
+    let homepts = 0;
+    let homerbd = 0;
+    let homeast = 0;
+    let homeblk = 0;
+    let homestl = 0;
+    let selectedPlayer = "";
+    let games = {};
+    let homeValue = document.getElementById("Home");
+    let awayValue = document.getElementById("Away");
+
+    class Players{
+        constructor(pname,pid){
+            this.pname = pname;
+            this.pid = pid;
+        }
+    }
+
+
+    function pickteam(event = new Event()){
+        team = document.getElementById("Team-Names");
+		pageNumber = 1;
+    }
+
+    function setPlayerName(event = new Event()){
+        selectedPlayer = event.target.value;
+    }
+
+    async function getStats(){
+        numOfPlayers = 0;
+        for(const playerName of playernames){
+            if (playerName.pname == selectedPlayer){
+                break;
+            }
+            numOfPlayers++;
+        }
+        const httpResponse = await fetch("https://www.balldontlie.io/api/v1/stats?seasons[]=2022&per_page=100&player_ids[]="+playernames[numOfPlayers].pid);
+        
+        //error handling
+        if(httpResponse.status === 404){
+            alert(`No teams found`);
+            return;
+        }
+
+        const body = await httpResponse.json();
+        games = body;
+        for (const game of games.data){
+            if (game.min > 0){
+                fullGamesPlayed++;
+                fullpts+=game.pts;
+                fullrbd+=game.reb;
+                fullast+=game.ast;
+                fullblk+=game.blk;
+                fullstl+=game.stl;
+                if(game.game.home_team_id == team.value){
+                    homeGamesPlayed++;
+					homepts+=game.pts;
+					homerbd+=game.reb;
+					homeast+=game.ast;
+					homeblk+=game.blk;
+					homestl+=game.stl;
+                }
+            }
+        }
+
+        let homeResults = (homepts/homeGamesPlayed).toFixed(2) + "/" + (homerbd/homeGamesPlayed).toFixed(2) + "/" + (homeast/homeGamesPlayed).toFixed(2) + "/" + (homeblk/homeGamesPlayed).toFixed(2) + "/" + (homestl/homeGamesPlayed).toFixed(2);
+        homeValue.innerHTML = homeResults;
+        let awayResults = ((fullpts-homepts)/(fullGamesPlayed-homeGamesPlayed)).toFixed(2) + "/" + ((fullrbd-homerbd)/(fullGamesPlayed-homeGamesPlayed)).toFixed(2) + "/" + ((fullast-homeast)/(fullGamesPlayed-homeGamesPlayed)).toFixed(2) + "/" + ((fullblk-homeblk)/(fullGamesPlayed-homeGamesPlayed)).toFixed(2) + "/" + ((fullstl-homestl)/(fullGamesPlayed-homeGamesPlayed)).toFixed(2);
+        awayValue.innerHTML = awayResults;
+		homeGamesPlayed=0;
+		homepts=0;
+		homerbd=0;
+		homeast=0;
+		homeblk=0;
+		homestl=0;
+		fullGamesPlayed=0;
+        fullpts=0;
+        fullrbd=0;
+        fullast=0;
+        fullblk=0;
+        fullstl=0;
+
+
+
+    }
+
+    function resetToFind(){
+        playernames = [];
+        numOfPlayers = 0;
+        findPlayerOnTeam();
+    }
+
+
+    async function findPlayerOnTeam(){
+        const httpResponse = await fetch("https://www.balldontlie.io/api/v1/stats?seasons[]=2022&per_page=100&end_date=2022-10-20&page="+pageNumber);
+
+        //error handling
+        if(httpResponse.status === 404){
+            alert(`No teams found`);
+            return;
+        }
+
+        const body = await httpResponse.json();
+        games = body;
+        numOfPlayers = 0;
+        for (const game of games.data){
+            if(game.player.team_id == team.value){
+                playernames[numOfPlayers] = new Players(game.player.first_name + " " + game.player.last_name, game.player.id);
+                numOfPlayers++;
+            }
+        }
+        if(games.meta.next_page != null){
+            pageNumber++;
+            findPlayerOnTeam();
+        }
+        else{
+            listPlayers();
+        }
+
+    }
+
+    function listPlayers(){
+        const PlayerList = document.getElementById("PlayerList");
+        PlayerList.innerHTML = "";
+        console.log(playernames.length);
+        console.log(playernames);
+        for(const plist of playernames){
+            const li = document.createElement("li");
+            li.innerText = plist.pname;
+            PlayerList.appendChild(li);
+
+        }
+        
+    }
+</script>
+<style>
+    
+body {
+    background-color: #5D76A9;
+    background-image: url(output-onlinepngtools.png);
+    background-attachment: fixed;
+    background-position: center center; /* Center the image */
+    background-repeat: no-repeat; /* Do not repeat the image */
+
+
+}
+
+p {
+    text-align: center;
+    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    color: #FFBB22;
+    font-weight: bold;
+    margin: 35px 100px 35px;
+}
+</style>
+</html>
